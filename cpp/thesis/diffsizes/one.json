@@ -1,0 +1,67 @@
+{
+  "prefill": {
+    "numThreads": 1,
+    "stopCondition": {
+      "ClassName": "OperationCounter",
+      "commonOperationLimit": 3520000
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 1,
+        "threadLoopBuilder": {
+          "ClassName": "PrefillInsertThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 1
+            },
+            "distributionBuilder": {
+              "ClassName": "UniformDistributionBuilder"
+            }
+          },
+          "numberOfAttempts": 10000
+        }
+      }
+    ]
+  },
+  "range": 10,
+  "test": {
+    "numThreads": 1,
+    "stopCondition": {
+      "ClassName": "Timer",
+      "workTime": 100000
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 1,
+        "pin": "0",
+        "threadLoopBuilder": {
+          "ClassName": "DefaultThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 2
+            },
+            "distributionBuilder": {
+              "ClassName": "UniformDistributionBuilder"
+            }
+          },
+          "parameters": {
+            "insertRatio": 0,
+            "removeRatio": 0,
+            "rqRatio": 0
+          }
+        }
+      }
+    ]
+  },
+  "warmUp": {
+    "numThreads": 0,
+    "stopCondition": {
+      "ClassName": "Timer",
+      "workTime": 5000
+    }
+  }
+}
