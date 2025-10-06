@@ -50,9 +50,9 @@ struct globals_t {
     PAD;
     volatile test_type garbage; // used to prevent optimizing out some code
     PAD;
-    std::shared_ptr<DS_ADAPTER_T> dsAdapter; // the data structure
+    std::unique_ptr<DS_ADAPTER_T> dsAdapter; // the data structure
     PAD;
-    std::shared_ptr<BenchParameters> benchParameters;
+    std::unique_ptr<BenchParameters> benchParameters;
     PAD;
     Random64 rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 //    PAD; // not needed because of padding at the end of rngs
@@ -65,10 +65,10 @@ struct globals_t {
     volatile bool debug_print;
     PAD;
 
-    globals_t(std::shared_ptr<BenchParameters> _benchParameters)
+    globals_t(std::unique_ptr<BenchParameters> _benchParameters)
             : NO_VALUE(NULL), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
             , KEY_MAX(_benchParameters->range + 1), PREFILL_INTERVAL_MILLIS(200),
-              benchParameters(_benchParameters) {
+              benchParameters(std::move(_benchParameters)) {
         debug_print = 0;
         srand(time(0));
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {

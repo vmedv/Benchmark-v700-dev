@@ -10,11 +10,11 @@ typedef long long test_type;
 #ifdef REDIS
     #define VALUE_TYPE test_type
     #define KEY_TO_VALUE(key) key
-    #define GET_FUNC executeContains
+    #define GET_FUNC ExecuteContains
 #else
     #define VALUE_TYPE void *
     #define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
-    #define GET_FUNC executeGet
+    #define GET_FUNC ExecuteGet
 #endif
 
 #define DS_ADAPTER_T ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >

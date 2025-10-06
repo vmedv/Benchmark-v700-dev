@@ -5,12 +5,19 @@
 #ifndef SETBENCH_THREAD_LOOP_H
 #define SETBENCH_THREAD_LOOP_H
 
+#include "adapter.h"
+#include "fibers.h"
+#include "threading.h"
+#include "threads.h"
 #include "workloads/stop_condition/stop_condition.h"
 #include "globals_t.h"
 
 //#define VALUE_TYPE void *
 
 typedef long long K;
+
+template <typename, typename, typename VT, VT NoValue, threading>
+struct Run;
 
 class ThreadLoop {
 protected:
@@ -22,59 +29,61 @@ protected:
     size_t RQ_RANGE;
 public:
     size_t threadId;
-    std::shared_ptr<globals_t> g;
+    // std::shared_ptr<globals_t> g;
+    using RT = Run<ds_adapter<test_type, VALUE_TYPE>, test_type, VALUE_TYPE, nullptr, fibers>;
+    RT& ctx_;
     std::shared_ptr<StopCondition> stopCondition;
 
-    ThreadLoop(std::shared_ptr<globals_t> _g, size_t _threadId, std::shared_ptr<StopCondition> _stopCondition, size_t _RQ_RANGE)
-            : g(_g), threadId(_threadId), stopCondition(_stopCondition), RQ_RANGE(_RQ_RANGE) {}
+    ThreadLoop(RT& ctx, size_t thread_id, std::shared_ptr<StopCondition> stop_condition, size_t rq_range)
+            : ctx_(ctx), threadId(thread_id), stopCondition(stop_condition), RQ_RANGE(rq_range) {}
 
     template<typename K>
-    K * executeInsert(K & key);
+    K * ExecuteInsert(K & key);
 
     template<typename K>
-    K * executeRemove(const K & key);
+    K * ExecuteRemove(const K & key);
 
     template<typename K>
-    K * executeGet(const K & key);
+    K * ExecuteGet(const K & key);
 
     template<typename K>
-    bool executeContains(const K & key);
+    bool ExecuteContains(const K & key);
 
     /**
      * the result is in the arrays rqResultKeys and rqResultValues
      */
     template<typename K>
-    void executeRangeQuery(const K & leftKey, const K & rightKey);
+    void ExecuteRangeQuery(const K & left_key, const K & right_key);
 
     virtual void run();
 
-    virtual void step() = 0;
+    virtual void Step() = 0;
 };
 
 #ifndef MAIN_BENCH
 
 template<typename K>
-void ThreadLoop::executeRangeQuery(const K &leftKey, const K &rightKey) {
+void ThreadLoop::ExecuteRangeQuery(const K &leftKey, const K &rightKey) {
 
 }
 
 template<typename K>
-bool ThreadLoop::executeContains(const K &key) {
+bool ThreadLoop::ExecuteContains(const K &key) {
     return false;
 }
 
 template<typename K>
-K *ThreadLoop::executeGet(const K &key) {
+K *ThreadLoop::ExecuteGet(const K &key) {
     return nullptr;
 }
 
 template<typename K>
-K *ThreadLoop::executeRemove(const K &key) {
+K *ThreadLoop::ExecuteRemove(const K &key) {
     return nullptr;
 }
 
 template<typename K>
-K *ThreadLoop::executeInsert(K &key) {
+K *ThreadLoop::ExecuteInsert(K &key) {
     return nullptr;
 }
 

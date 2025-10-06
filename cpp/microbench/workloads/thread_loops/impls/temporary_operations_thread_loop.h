@@ -35,23 +35,23 @@ class TemporaryOperationThreadLoop : public ThreadLoop {
     }
 
 public:
-    TemporaryOperationThreadLoop(std::shared_ptr<globals_t> g, Random64 &_rng, size_t threadId, std::shared_ptr<StopCondition> stopCondition,
-                                 size_t rqRange,
-                                 size_t _stagesNumber,
-                                 size_t *_stagesDurations,
+    TemporaryOperationThreadLoop(RT& ctx, Random64 &rng, size_t thread_id, std::shared_ptr<StopCondition> stop_condition,
+                                 size_t rq_range,
+                                 size_t stages_number,
+                                 size_t *stages_durations,
                                  RatioThreadLoopParameters **ratios,
-                                 std::shared_ptr<ArgsGenerator<K>> _argsGenerator)
-            : ThreadLoop(g, threadId, stopCondition, rqRange),
-              rng(_rng),
-              argsGenerator(_argsGenerator),
-              stagesNumber(_stagesNumber),
+                                 std::shared_ptr<ArgsGenerator<K>> args_generator)
+            : ThreadLoop(ctx, thread_id, stop_condition, rq_range),
+              rng(rng),
+              argsGenerator(args_generator),
+              stagesNumber(stages_number),
               time(0),
               pointer(0) {
-        cdf = new double *[_stagesNumber];
-        stagesDurations = new size_t[_stagesNumber];
-        std::copy(_stagesDurations, _stagesDurations + _stagesNumber, stagesDurations);
+        cdf = new double *[stages_number];
+        stagesDurations = new size_t[stages_number];
+        std::copy(stages_durations, stages_durations + stages_number, stagesDurations);
 
-        for (size_t i = 0; i < _stagesNumber; ++i) {
+        for (size_t i = 0; i < stages_number; ++i) {
             cdf[i] = new double[3];
             cdf[i][0] = ratios[i]->INS_RATIO;
             cdf[i][1] = cdf[i][0] + ratios[i]->REM_RATIO;
@@ -59,19 +59,19 @@ public:
         }
     }
 
-    void step() override {
+    void Step() override {
         update_pointer();
 
         double op = (double) rng.next() / (double) rng.max_value;
         if (op < cdf[pointer][0]) { // insert
             K key = this->argsGenerator->nextInsert();
-            this->executeInsert(key);
+            this->ExecuteInsert(key);
         } else if (op < cdf[pointer][1]) { // remove
             K key = this->argsGenerator->nextRemove();
-            this->executeRemove(key);
+            this->ExecuteRemove(key);
         } else if (op < cdf[pointer][2]) { // range query
             std::pair<K, K> keys = this->argsGenerator->nextRange();
-            this->executeRangeQuery(keys.first, keys.second);
+            this->ExecuteRangeQuery(keys.first, keys.second);
         } else { // read
             K key = this->argsGenerator->nextGet();
             this->GET_FUNC(key);
@@ -154,10 +154,10 @@ struct TemporaryOperationsThreadLoopBuilder : public ThreadLoopBuilder {
     }
 
     std::shared_ptr<ThreadLoop>
-    build(std::shared_ptr<globals_t> _g, Random64 &_rng, size_t _tid, std::shared_ptr<StopCondition> _stopCondition) override {
-        return std::shared_ptr<TemporaryOperationThreadLoop>(new TemporaryOperationThreadLoop(_g, _rng, _tid, _stopCondition, this->RQ_RANGE,
+    build(ThreadLoop::RT& ctx, Random64 &rng, size_t tid, std::shared_ptr<StopCondition> stop_condition) override {
+        return std::shared_ptr<TemporaryOperationThreadLoop>(new TemporaryOperationThreadLoop(ctx, rng, tid, stop_condition, this->RQ_RANGE,
                                                 stagesNumber, stagesDurations, ratios,
-                                                argsGeneratorBuilder->build(_rng)));
+                                                argsGeneratorBuilder->build(rng)));
     }
 
     void toJson(nlohmann::json &j) const override {

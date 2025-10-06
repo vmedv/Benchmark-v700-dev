@@ -176,7 +176,7 @@ public:
         return this;
     }
 
-    std::vector<std::shared_ptr<ThreadLoop>> getWorkload(std::shared_ptr<globals_t> _g, Random64 *_rngs) const {
+    std::vector<std::shared_ptr<ThreadLoop>> getWorkload(ThreadLoop::RT& ctx, Random64 *_rngs) const {
         auto workload = std::vector<std::shared_ptr<ThreadLoop>>();
         workload.reserve(this->numThreads);
         for (size_t threadId = 0, i = 0, curQuantity = 0; threadId < this->numThreads; ++threadId, ++curQuantity) {
@@ -186,7 +186,7 @@ public:
             }
 
             workload.push_back(threadLoopBuilders[i]->threadLoopBuilder
-                    ->build(_g, _rngs[threadId], threadId, stopCondition));
+                    ->build(ctx, _rngs[threadId], threadId, stopCondition));
         }
         return workload;
     }

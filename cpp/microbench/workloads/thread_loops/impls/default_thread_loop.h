@@ -20,28 +20,28 @@ class DefaultThreadLoop : public ThreadLoop {
     PAD;
 
 public:
-    DefaultThreadLoop(std::shared_ptr<globals_t> _g, Random64 &_rng, size_t _threadId, std::shared_ptr<StopCondition> _stopCondition, size_t _RQ_RANGE,
-                      std::shared_ptr<ArgsGenerator<K>> _argsGenerator,
-                      RatioThreadLoopParameters &threadLoopParameters)
-            : ThreadLoop(_g, _threadId, _stopCondition, _RQ_RANGE),
-              rng(_rng), argsGenerator(_argsGenerator) {
+    DefaultThreadLoop(RT& ctx, Random64 &rng, size_t thread_id, std::shared_ptr<StopCondition> stop_condition, size_t rq_range,
+                      std::shared_ptr<ArgsGenerator<K>> args_generator,
+                      RatioThreadLoopParameters &thread_loop_parameters)
+            : ThreadLoop(ctx, thread_id, stop_condition, rq_range),
+              rng(rng), argsGenerator(args_generator) {
         cdf.resize(3);
-        cdf[0] = threadLoopParameters.INS_RATIO;
-        cdf[1] = cdf[0] + threadLoopParameters.REM_RATIO;
-        cdf[2] = cdf[1] + threadLoopParameters.RQ_RATIO;
+        cdf[0] = thread_loop_parameters.INS_RATIO;
+        cdf[1] = cdf[0] + thread_loop_parameters.REM_RATIO;
+        cdf[2] = cdf[1] + thread_loop_parameters.RQ_RATIO;
     }
 
-    void step() override {
+    void Step() override {
         double op = (double) rng.next() / (double) rng.max_value;
         if (op < cdf[0]) { // insert
             K key = this->argsGenerator->nextInsert();
-            this->executeInsert(key);
+            this->ExecuteInsert(key);
         } else if (op < cdf[1]) { // remove
             K key = this->argsGenerator->nextRemove();
-            this->executeRemove(key);
+            this->ExecuteRemove(key);
         } else if (op < cdf[2]) { // range query
             std::pair<K, K> keys = this->argsGenerator->nextRange();
-            this->executeRangeQuery(keys.first, keys.second);
+            this->ExecuteRangeQuery(keys.first, keys.second);
         } else { // read
             K key = this->argsGenerator->nextGet();
             this->GET_FUNC(key);
@@ -88,9 +88,9 @@ struct DefaultThreadLoopBuilder : public ThreadLoopBuilder {
     }
 
 //    template<typename K>
-    std::shared_ptr<ThreadLoop> build(std::shared_ptr<globals_t> _g, Random64 &_rng, size_t _threadId, std::shared_ptr<StopCondition> _stopCondition) override {
-        return std::shared_ptr<ThreadLoop>(new DefaultThreadLoop(_g, _rng, _threadId, _stopCondition, this->RQ_RANGE,
-                                     argsGeneratorBuilder->build(_rng),
+    std::shared_ptr<ThreadLoop> build(ThreadLoop::RT& ctx, Random64 &rng, size_t thread_id, std::shared_ptr<StopCondition> stop_condition) override {
+        return std::shared_ptr<ThreadLoop>(new DefaultThreadLoop(ctx, rng, thread_id, stop_condition, this->RQ_RANGE,
+                                     argsGeneratorBuilder->build(rng),
                                      parameters));
     }
 

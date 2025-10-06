@@ -6,6 +6,7 @@
 #define SETBENCH_THREAD_LOOP_BUILDER_H
 
 #include <string>
+#include "random_xoshiro256p.h"
 #include "thread_loop.h"
 #include <nlohmann/json.hpp>
 #include "globals_t.h"
@@ -19,7 +20,7 @@ struct ThreadLoopBuilder {
         return this;
     };
 
-    virtual std::shared_ptr<ThreadLoop> build(std::shared_ptr<globals_t> _g, Random64 & _rng, size_t _tid, std::shared_ptr<StopCondition> _stopCondition) = 0;
+    virtual std::shared_ptr<ThreadLoop> build(ThreadLoop::RT& ctx, Random64 & rng, size_t tid, std::shared_ptr<StopCondition> stop_condition) = 0;
 
     virtual void toJson(nlohmann::json &j) const = 0;
 

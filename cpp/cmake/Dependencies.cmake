@@ -16,3 +16,12 @@ FetchContent_Declare(
   FIND_PACKAGE_ARGS
 )
 FetchContent_MakeAvailable(GTest)
+
+message(STATUS "Fetching Argparse")
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+    DOWNLOAD_EXTRACT_TIMESTAMP NEW
+    FIND_PACKAGE_ARGS
+)
+FetchContent_MakeAvailable(argparse)

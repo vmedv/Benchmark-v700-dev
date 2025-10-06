@@ -188,8 +188,8 @@ void bindThreads(int nthreads) {
     //    }
 }
 
-void createDataStructure(std::shared_ptr<globals_t> g) {
-    g->dsAdapter = std::shared_ptr<DS_ADAPTER_T>(new DS_ADAPTER_T(
+void createDataStructure(std::unique_ptr<globals_t> g) {
+    g->dsAdapter = std::unique_ptr<DS_ADAPTER_T>(new DS_ADAPTER_T(
         g->benchParameters->getMaxThreads(), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs));
 }
 

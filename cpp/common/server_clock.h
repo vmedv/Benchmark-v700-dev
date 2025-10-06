@@ -9,6 +9,9 @@
 #define SERVER_CLOCK_H
 
 #include <cstdint>
+#include <cstdio>
+#include <string_view>
+#include "plaf.h"
 #if defined __x86_64__ && !defined CPU_FREQ_GHZ
 #error "Must define CPU_FREQ_GHZ for server_clock.h on __x86_64__"
 #endif
@@ -42,11 +45,12 @@ timespec getUptimeTimespec() {
     clock_gettime(CLOCK_MONOTONIC, &uptime);
     return uptime;
 }
-#define printUptimeStampForPERF(label) { \
-    SOFTWARE_BARRIER; \
-    timespec ___currts = getUptimeTimespec(); \
-    SOFTWARE_BARRIER; \
-    printf("REALTIME_%s_PERF_FORMAT=%ld%s%ld\n", (label), ___currts.tv_sec, ".", ___currts.tv_nsec); \
+inline __attribute__((always_inline)) void printUptimeStampForPERF(std::string_view sv) {
+    SOFTWARE_BARRIER;
+    timespec ___currts = getUptimeTimespec();
+    SOFTWARE_BARRIER;
+    std::fputs(sv.data(), stdout);
+    std::printf("_PERF_FORMAT=%ld%s%ld\n", ___currts.tv_sec, ".", ___currts.tv_nsec);
 }
 
 //class ClockSplitter {

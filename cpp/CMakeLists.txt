@@ -18,9 +18,18 @@ option(SKIP_VALIDATION "enable validation skipping
 option(TESTING         "enable utility code testing
     (compile target for testing workloads code)"            OFF)
 option(MAX_THREADS     "declare max threads
-    (should be power of 2)"                                 512)
-option(CPU_FREQ        "declare freq for server clock"      2.1)
+    (should be power of 2)"                                 OFF)
+option(CPU_FREQ        "declare freq for server clock"      OFF)
 option(KEY_TOTAL_STAT  "trace depth & search total stats"    ON)
+option(THREADLIKE      "fetch and use threadlike"           OFF)
+
+if(NOT CPU_FREQ OR CPU_FREQ STREQUAL "OFF")
+    set(CPU_FREQ "2.1" CACHE STRING "declare freq for server clock" FORCE)
+endif()
+
+if(NOT MAX_THREADS OR MAX_THREADS STREQUAL "OFF")
+    set(MAX_THREADS "512" CACHE STRING "declare max threads" FORCE)
+endif()
 
 
 ##### compiler configuration #####
@@ -103,11 +112,15 @@ include_directories(common/rq)
 include_directories(common/rq/snapcollector)
 include_directories(common/urcu)
 include_directories(ds/verlib_structs/include)
+include_directories(threadlike)
 
 set(libs "")
 
 find_package(nlohmann_json CONFIG REQUIRED)
 list(APPEND libs nlohmann_json::nlohmann_json)
+
+find_package(argparse CONFIG REQUIRED)
+list(APPEND libs argparse)
 
 if(OPTIMIZE)
     add_compile_definitions(DCMAKE_BUILD_TYPE=Release)
@@ -152,6 +165,16 @@ if (KEY_TOTAL_STAT)
     )
 endif()
 
+if(THREADLIKE)
+    add_definitions("-DTHREADLIKE")
+    find_package(Boost REQUIRED COMPONENTS fiber)
+    list(APPEND libs
+        Boost::fiber
+        Boost::context
+        ${Boost_LIBRARIES}
+    )
+endif()
+
 
 add_definitions(
   "-DMEMORY_STATS=if\(1\)"    # purely hardcoded for trbot's code
@@ -185,7 +208,7 @@ list(APPEND reclaimers "debra")
 foreach(dataStructure ${dataStructures})
     foreach(reclaimer ${reclaimers})
         set(target "${dataStructure}.${reclaimer}")
-        add_executable(${target} microbench/main.cpp)
+        add_executable(${target} microbench/mainv2.cpp)
         target_include_directories(${target} PUBLIC ${DSDir}/${dataStructure})
         target_link_libraries(${target} PUBLIC ${libs})
         if(${dataStructure} MATCHES "wang_openbwtree")

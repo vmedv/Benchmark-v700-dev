@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   locks_impl.h
  * Author: trbot
  *

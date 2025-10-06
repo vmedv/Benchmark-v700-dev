@@ -21,19 +21,19 @@ private:
     size_t number_of_attempts;
 
 public:
-    PrefillInsertThreadLoop(std::shared_ptr<globals_t> _g, Random64 &_rng, size_t _threadId,
-                            std::shared_ptr<StopCondition> _stopCondition, size_t _RQ_RANGE,
-                            std::shared_ptr<ArgsGenerator<K>> _argsGenerator, size_t _number_of_attempts)
-            : ThreadLoop(_g, _threadId, _stopCondition, _RQ_RANGE),
-              rng(_rng), argsGenerator(_argsGenerator), number_of_attempts(_number_of_attempts) {
+    PrefillInsertThreadLoop(RT& ctx, Random64 &rng, size_t thread_id,
+                            std::shared_ptr<StopCondition> stop_condition, size_t rq_range,
+                            std::shared_ptr<ArgsGenerator<K>> args_generator, size_t number_of_attempts)
+            : ThreadLoop(ctx, thread_id, stop_condition, rq_range),
+              rng(rng), argsGenerator(args_generator), number_of_attempts(number_of_attempts) {
     }
 
-    void step() override {
+    void Step() override {
         size_t counter = 0;
         K *value;
         do {
             K key = this->argsGenerator->nextInsert();
-            value = this->executeInsert(key);
+            value = this->ExecuteInsert(key);
             ++counter;
         } while (value != (K *) this->NO_VALUE && counter < number_of_attempts);
 
@@ -73,9 +73,9 @@ struct PrefillInsertThreadLoopBuilder : public ThreadLoopBuilder {
     }
 
 //    template<typename K>
-    std::shared_ptr<ThreadLoop> build(std::shared_ptr<globals_t> _g, Random64 &_rng, size_t _threadId, std::shared_ptr<StopCondition> _stopCondition) override {
-        return std::shared_ptr<PrefillInsertThreadLoop>(new PrefillInsertThreadLoop(_g, _rng, _threadId, _stopCondition, this->RQ_RANGE,
-                                           argsGeneratorBuilder->build(_rng), numberOfAttempts));
+    std::shared_ptr<ThreadLoop> build(ThreadLoop::RT& ctx, Random64 &rng, size_t thread_id, std::shared_ptr<StopCondition> stop_condition) override {
+        return std::shared_ptr<PrefillInsertThreadLoop>(new PrefillInsertThreadLoop(ctx, rng, thread_id, stop_condition, this->RQ_RANGE,
+                                           argsGeneratorBuilder->build(rng), numberOfAttempts));
     }
 
     void toJson(nlohmann::json &json) const override {
