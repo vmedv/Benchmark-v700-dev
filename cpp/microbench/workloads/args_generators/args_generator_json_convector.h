@@ -5,15 +5,15 @@
 
 #include "json/single_include/nlohmann/json.hpp"
 #include "args_generator_builder.h"
-#include "workloads/args_generators/impls/default_args_generator.h"
-#include "workloads/args_generators/impls/skewed_sets_args_generator.h"
-#include "workloads/args_generators/impls/skewed_insert_args_generator.h"
-#include "workloads/args_generators/impls/creakers_and_wave_args_generator.h"
-#include "workloads/args_generators/impls/temporary_skewed_args_generator.h"
-#include "workloads/args_generators/impls/leafs_handshake_args_generator.h"
-#include "workloads/args_generators/impls/generalized_args_generator.h"
-#include "workloads/args_generators/impls/null_args_generator.h"
-#include "workloads/args_generators/impls/range_query_args_generator.h"
+#include "workloads/args_generators/builders/default_args_generator_builder.h"
+#include "workloads/args_generators/builders/skewed_sets_args_generator_builder.h"
+#include "workloads/args_generators/builders/skewed_insert_args_generator_builder.h"
+#include "workloads/args_generators/builders/creakers_and_wave_args_generator_builder.h"
+#include "workloads/args_generators/builders/temporary_skewed_args_generator_builder.h"
+#include "workloads/args_generators/builders/leafs_handshake_args_generator_builder.h"
+#include "workloads/args_generators/builders/generalized_args_generator_builder.h"
+#include "workloads/args_generators/builders/null_args_generator_builder.h"
+#include "workloads/args_generators/builders/range_query_args_generator_builder.h"
 #include "errors.h"
 
 namespace microbench::workload {
@@ -31,7 +31,7 @@ ArgsGeneratorBuilder* get_args_generator_from_json(const nlohmann::json& j) {
         args_generator_builder = new CreakersAndWaveArgsGeneratorBuilder();
     } else if (class_name == "CreakersAndWavePrefillArgsGeneratorBuilder") {
         args_generator_builder = new CreakersAndWavePrefillArgsGeneratorBuilder();
-    } else if (class_name == "LeafsHandshakeArgsGeneratorBuilder") {
+    } else if (class_name == "LeavesHandshakeArgsGeneratorBuilder") {
         args_generator_builder = new LeafsHandshakeArgsGeneratorBuilder();
     } else if (class_name == "SkewedInsertArgsGeneratorBuilder") {
         args_generator_builder = new SkewedInsertArgsGeneratorBuilder();
