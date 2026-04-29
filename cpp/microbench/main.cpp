@@ -176,6 +176,28 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #include "globals_t_impl.h"
 #include "statistics.h"
 #include "parse_argument.h"
+#include <sys/prctl.h>
+#include <linux/prctl.h>
+
+#ifdef PERF_REG
+
+static int perf_ctl_fd = -1;
+static void perf_control_open(const char* path) {
+    perf_ctl_fd = open(path, O_WRONLY);
+}
+static void perf_control(std::string_view cmd) {
+    if (perf_ctl_fd >= 0) {
+        write(perf_ctl_fd, cmd.data(), cmd.size());
+    }
+}
+static void perf_enable() {
+    perf_control("enable\n");
+}
+static void perf_disable() {
+    perf_control("disable\n");
+}
+
+#endif
 
 using namespace microbench;
 using namespace microbench::workload;
@@ -204,7 +226,7 @@ Statistic get_statistic(int64_t elapsed_millis) {
     return Statistic(elapsed_millis / 1000.);
 }
 
-void execute(globals_t* g, Parameters const& parameters) {
+void execute(globals_t* g, Parameters const& parameters, bool perf = false) {
     std::thread** threads = new std::thread*[MAX_THREADS_POW2];
     std::vector<ThreadLoopPtr> thread_loops = parameters.get_workload(g, g->rngs);
 
@@ -213,7 +235,6 @@ void execute(globals_t* g, Parameters const& parameters) {
     bind_threads(parameters.get_num_threads());
 
     std::cout << "creating threads...\n";
-
     for (int i = 0; i < parameters.get_num_threads(); ++i) {
         threads[i] = new std::thread(&ThreadLoop::run, thread_loops[i].get());
     }
@@ -234,6 +255,12 @@ void execute(globals_t* g, Parameters const& parameters) {
     ___timeline_use = 1;
 #endif
 
+    #ifdef PERF_REG
+    if (perf) {
+        perf_enable();
+    }
+    #endif
+
     parameters.stopCondition->start(parameters.get_num_threads());
     g->start = true;
     SOFTWARE_BARRIER;
@@ -241,6 +268,12 @@ void execute(globals_t* g, Parameters const& parameters) {
     for (size_t i = 0; i < parameters.get_num_threads(); ++i) {
         threads[i]->join();
     }
+
+    #ifdef PERF_REG
+    if (perf) {
+        perf_disable();
+    }
+    #endif
 
     SOFTWARE_BARRIER;
     g->done = true;
@@ -409,7 +442,7 @@ void run(globals_t* g) {
 
     std::cout << to_string_stage("Test stage");
 
-    execute(g, g->benchParameters->test);
+    execute(g, g->benchParameters->test, true);
 
     COUTATOMIC(std::endl);
     COUTATOMIC(to_string_big_stage("END RUNNING"))
@@ -620,6 +653,9 @@ void write_json_file(const std::string& file_name, T& t) {
 
 int main(int argc, char** argv) {
     printUptimeStampForPERF("MAIN_START");
+    #ifdef PERF_REG
+    perf_control_open("./ctl");
+    #endif
 
     std::cout << "binary=" << argv[0] << std::endl;
 
