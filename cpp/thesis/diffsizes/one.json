@@ -3,7 +3,7 @@
     "numThreads": 1,
     "stopCondition": {
       "ClassName": "OperationCounter",
-      "commonOperationLimit": 3520000
+      "commonOperationLimit": 100
     },
     "threadLoopBuilders": [
       {
@@ -25,12 +25,12 @@
       }
     ]
   },
-  "range": 10,
+  "range": 100,
   "test": {
     "numThreads": 1,
     "stopCondition": {
       "ClassName": "Timer",
-      "workTime": 100000
+      "workTime": 6000
     },
     "threadLoopBuilders": [
       {
