@@ -16,6 +16,7 @@ MutableDistributionBuilderPtr get_mutable_distribution_from_json(const nlohmann:
 
 #ifdef DISTR_CONV_IMPL
 
+#include "distributions/builders/balanced_prefill_distribution_builder.h"
 #include "distributions/builders/skewed_uniform_distribution_builder.h"
 #include "distributions/builders/uniform_distribution_builder.h"
 #include "distributions/builders/zipfian_distribution_builder.h"
@@ -33,6 +34,8 @@ DistributionBuilderPtr get_distribution_from_json(const nlohmann::json& j) {
         distribution_builder = std::make_unique<ZipfianDistributionBuilder>();
     } else if (class_name == "SkewedUniformDistributionBuilder") {
         distribution_builder = std::make_unique<SkewedUniformDistributionBuilder>();
+    } else if (class_name == "BalancedPrefillDistributionBuilder") {
+        distribution_builder = std::make_unique<BalancedPrefillDistributionBuilder>();
     } else {
         setbench_error("JSON PARSER: Unknown class name DistributionBuilder -- " + class_name)
     }
