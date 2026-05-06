@@ -156,10 +156,10 @@ endif()
 
 
 # TODO: find out why this is needed and remove, if possible
-add_definitions(
-  "-DMEMORY_STATS=if\(1\)"    # purely hardcoded for trbot's code
-  "-DMEMORY_STATS2=if\(0\)"   # purelu hardcoded for thbot's code
-)
+# add_definitions(
+#   "-DMEMORY_STATS=if\(1\)"    # purely hardcoded for trbot's code
+#   "-DMEMORY_STATS2=if\(0\)"   # purelu hardcoded for thbot's code
+# )
 
 add_compile_options(${compilerOptions})
 add_compile_definitions(${compilerDefinitions})
