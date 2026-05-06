@@ -10,9 +10,11 @@ run load-in='example.json' target='payload_tree' stat-out='/dev/null' load-out='
   @mkfifo ctl
   -perf stat -j -o {{ stat-out }} --control fifo:ctl \
     -e instructions,cache-references,cache-misses,L1-dcache-loads,L1-dcache-load-misses,l2_cache_req_stat.dc_hit_in_l2,l2_cache_req_stat.dc_access_in_l2  \
-    -- build/{{ target }}.debra -json-file {{ load-in }} -result-file {{ load-out }}
+    -- env LD_PRELOAD=./lib/libmimalloc.so build/{{ target }}.debra -json-file {{ load-in }} -result-file {{ load-out }}
   @rm ctl
 
+py:
+  nix run nixpkgs#python3
 
 clean:
   rm -rf build
