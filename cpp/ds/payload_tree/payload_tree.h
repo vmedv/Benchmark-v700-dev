@@ -2,6 +2,9 @@
 
 #include <atomic>
 #include <concepts>
+#include <iostream>
+#include <new>
+#include <ostream>
 
 /*
  * Unbalanced external (leaf-oriented) BST.
@@ -91,7 +94,7 @@ public:
 
         Node* left = make_leaf(smaller, /*has_value=*/true);
         Node* right = make_leaf(larger, /*has_value=*/true);
-        Node* internal = new Node{left, right, /*is_leaf=*/false,
+        Node* internal = new (std::align_val_t{64}) Node{left, right, /*is_leaf=*/false,
                                   /*has_value=*/false, smaller, 0};
 
         // Reuse `node`'s slot in the parent (or as the new root) by replacing
@@ -122,9 +125,13 @@ public:
         return node->key == key ? node : nullptr;
     }
 
+    int getHeight() const noexcept {
+        return height(root_);
+    }
+
 private:
     static Node* make_leaf(Key key, bool has_value) {
-        return new Node{nullptr, nullptr, /*is_leaf=*/true, has_value, key, 0};
+        return new (std::align_val_t{64}) Node{nullptr, nullptr, /*is_leaf=*/true, has_value, key, 0};
     }
 
     static void destroy(Node* node) {
@@ -134,6 +141,20 @@ private:
         destroy(node->left);
         destroy(node->right);
         delete node;
+    }
+
+    static int height(const Node* node) noexcept {
+        if (node == nullptr || node->is_leaf) {
+            return 0;
+        }
+
+
+        const int left_height = height(node->left);
+        const int right_height = height(node->right);
+
+        std::cout << "[dbg] " << left_height << " " << right_height << std::endl;
+
+        return 1 + (left_height > right_height ? left_height : right_height);
     }
 };
 }  // namespace spc

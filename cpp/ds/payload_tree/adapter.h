@@ -59,6 +59,9 @@ public:
     bool contains(const int tid, const K& key) {
         return find(tid, key) != getNoValue();
     }
+    int getHeight() {
+        return ds->getHeight();
+    }
     int rangeQuery(const int tid, const K& lo, const K& hi, K* const resultKeys,
                    V* const resultValues) {
         setbench_error("not implemented");
