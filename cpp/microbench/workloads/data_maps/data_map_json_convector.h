@@ -4,6 +4,7 @@
 #pragma once
 
 #include "data_map_builder.h"
+#include "workloads/data_maps/builders/biased_prefix_data_map_builder.h"
 #include "workloads/data_maps/builders/id_data_map_builder.h"
 #include "workloads/data_maps/builders/array_data_map_builder.h"
 #include "errors.h"
@@ -26,6 +27,8 @@ DataMapBuilderPtr get_data_map_from_json(const nlohmann::json& j) {
         data_map_builder = std::make_shared<IdDataMapBuilder>();
     } else if (class_name == "ArrayDataMapBuilder") {
         data_map_builder = std::make_shared<ArrayDataMapBuilder>();
+    } else if (class_name == "BiasedPrefixDataMapBuilder") {
+        data_map_builder = std::make_shared<BiasedPrefixDataMapBuilder>();
     } else if (class_name == "HashDataMapBuilder") {
         setbench_error("HashDataMapBuilder unimplemented")
     } else {
