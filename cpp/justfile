@@ -1,0 +1,18 @@
+conf:
+  cmake -S . -B build -GNinja -DPAPI=OFF -DLIBNUMA=OFF -DOPTIMIZE=ON -DPERF_REG=ON
+
+build target='payload_tree': conf
+  cmake --build build --target {{ target }}.debra
+
+[arg("stat-out", long, short='s')]
+[arg("load-out", long, short='l')]
+run load-in='example.json' target='payload_tree' stat-out='/dev/null' load-out='/dev/null': (build target)
+  @mkfifo ctl
+  -perf stat -j -o {{ stat-out }} --control fifo:ctl \
+    -e instructions,cache-references,cache-misses,L1-dcache-loads,L1-dcache-load-misses,l2_cache_req_stat.dc_hit_in_l2,l2_cache_req_stat.dc_access_in_l2  \
+    -- build/{{ target }}.debra -json-file {{ load-in }} -result-file {{ load-out }}
+  @rm ctl
+
+
+clean:
+  rm -rf build
