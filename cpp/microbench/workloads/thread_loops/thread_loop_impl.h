@@ -15,9 +15,9 @@ namespace microbench::workload {
     binding_bindThread(tid);                                                       \
     garbage = 0;                                                                   \
     rqResultKeys = std::vector<KeyType>();                                         \
-    rqResultKeys.resize(this->RQ_RANGE + MAX_KEYS_PER_NODE);                       \
+    /*rqResultKeys.resize(this->RQ_RANGE + MAX_KEYS_PER_NODE);*/                       \
     rqResultValues = std::vector<VALUE_TYPE>();                                    \
-    rqResultValues.resize(this->RQ_RANGE + MAX_KEYS_PER_NODE);                     \
+    /*rqResultValues.resize(this->RQ_RANGE + MAX_KEYS_PER_NODE);*/                     \
     NO_VALUE = this->g->dsAdapter->getNoValue();                                   \
     __RLU_INIT_THREAD;                                                             \
     __RCU_INIT_THREAD;                                                             \
