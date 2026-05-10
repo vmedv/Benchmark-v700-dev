@@ -1,0 +1,107 @@
+{
+  "prefill": {
+    "numThreads": 1,
+    "stopCondition": {
+      "ClassName": "OperationCounter",
+      "commonOperationLimit": 67108864
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 1,
+        "threadLoopBuilder": {
+          "ClassName": "PrefillInsertThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 0
+            },
+            "distributionBuilder": {
+              "ClassName": "BalancedPrefillDistributionBuilder"
+            }
+          },
+          "numberOfAttempts": 67108864
+        }
+      }
+    ]
+  },
+  "range": 67108864,
+  "test": {
+    "numThreads": 1,
+    "stopCondition": {
+      "ClassName": "Timer",
+      "workTime": 6000
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 1,
+        "pin": "8",
+        "threadLoopBuilder": {
+          "ClassName": "DefaultThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "distributionBuilder": {
+              "ClassName": "SkewedUniformDistributionBuilder",
+              "hotSize": 0.015625,
+              "hotRatio": 1.0,
+              "hotDistBuilder": {
+                "ClassName": "UniformDistributionBuilder"
+              },
+              "coldDistBuilder": {
+                "ClassName": "UniformDistributionBuilder"
+              }
+            },
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 0
+            }
+          },
+          "parameters": {
+            "insertRatio": 0,
+            "removeRatio": 0,
+            "rqRatio": 0.0
+          }
+        }
+      }
+    ]
+  },
+  "warmUp": {
+    "numThreads": 1,
+    "stopCondition": {
+      "ClassName": "Timer",
+      "workTime": 2000
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 1,
+        "pin": "8",
+        "threadLoopBuilder": {
+          "ClassName": "DefaultThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "distributionBuilder": {
+              "ClassName": "SkewedUniformDistributionBuilder",
+              "hotSize": 0.015625,
+              "hotRatio": 1.0,
+              "hotDistBuilder": {
+                "ClassName": "UniformDistributionBuilder"
+              },
+              "coldDistBuilder": {
+                "ClassName": "UniformDistributionBuilder"
+              }
+            },
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 0
+            }
+          },
+          "parameters": {
+            "insertRatio": 0,
+            "removeRatio": 0,
+            "rqRatio": 0.0
+          }
+        }
+      }
+    ]
+  }
+}
