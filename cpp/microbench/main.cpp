@@ -182,18 +182,100 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #ifdef PERF_REG
 
 static int perf_ctl_fd = -1;
-static void perf_control_open(const char* path) {
-    perf_ctl_fd = open(path, O_WRONLY);
+static int perf_ack_fd = -1;
+
+static void perf_log(const std::string& message) {
+    std::cerr << "[perf-reg] " << message << std::endl;
 }
-static void perf_control(std::string_view cmd) {
-    if (perf_ctl_fd >= 0) {
-        write(perf_ctl_fd, cmd.data(), cmd.size());
+
+static int perf_parse_fd_env(const char* name) {
+    const char* value = getenv(name);
+    if (value == nullptr || *value == '\0') {
+        perf_log(std::string("missing env ") + name);
+        return -1;
+    }
+
+    char* end = nullptr;
+    long parsed = strtol(value, &end, 10);
+    if (end == value || *end != '\0' || parsed < 0 || parsed > INT_MAX) {
+        perf_log(std::string("invalid ") + name + "=" + value);
+        return -1;
+    }
+    perf_log(std::string("parsed ") + name + "=" + value);
+    return static_cast<int>(parsed);
+}
+
+static void perf_control_open() {
+    perf_ctl_fd = perf_parse_fd_env("PERF_CTL_FD");
+    perf_ack_fd = perf_parse_fd_env("PERF_ACK_FD");
+    if (perf_ctl_fd < 0 || perf_ack_fd < 0) {
+        perf_log("PERF_REG requires PERF_CTL_FD and PERF_ACK_FD");
+    } else {
+        perf_log("control fds ready");
     }
 }
+
+static void perf_control_wait_ack() {
+    if (perf_ack_fd < 0) {
+        perf_log("skip ack wait because PERF_ACK_FD is invalid");
+        return;
+    }
+
+    char ch;
+    perf_log("waiting for ack");
+    while (true) {
+        ssize_t result = read(perf_ack_fd, &ch, 1);
+        if (result == 1) {
+            perf_log(std::string("ack byte received: ") + (ch == '\n' ? "\\n" : std::string(1, ch)));
+            if (ch == '\n') {
+                perf_log("ack complete");
+                return;
+            }
+            continue;
+        }
+        if (result == 0) {
+            perf_log("ack read returned EOF");
+        } else {
+            perf_log(std::string("ack read failed errno=") + std::to_string(errno));
+        }
+        return;
+    }
+}
+
+static void perf_control(std::string_view cmd) {
+    if (perf_ctl_fd < 0) {
+        perf_log(std::string("skip command because PERF_CTL_FD is invalid: ") + std::string(cmd));
+        return;
+    }
+
+    perf_log(std::string("sending command: ") + std::string(cmd));
+    ssize_t written = write(perf_ctl_fd, cmd.data(), cmd.size());
+    if (written != static_cast<ssize_t>(cmd.size())) {
+        std::string message = std::string("perf control write failed for command: ") + std::string(cmd);
+        if (written < 0) {
+            message += " errno=" + std::to_string(errno);
+        } else {
+            message += " partial=" + std::to_string(written);
+        }
+        perf_log(message);
+        return;
+    }
+    perf_log("command written successfully");
+    perf_control_wait_ack();
+}
+
+static void perf_control_close() {
+    perf_log("resetting local perf control state");
+    perf_ctl_fd = -1;
+    perf_ack_fd = -1;
+}
+
 static void perf_enable() {
+    perf_log("enable requested");
     perf_control("enable\n");
 }
 static void perf_disable() {
+    perf_log("disable requested");
     perf_control("disable\n");
 }
 
@@ -654,7 +736,7 @@ void write_json_file(const std::string& file_name, T& t) {
 int main(int argc, char** argv) {
     printUptimeStampForPERF("MAIN_START");
     #ifdef PERF_REG
-    perf_control_open("./ctl");
+    perf_control_open();
     #endif
 
     std::cout << "binary=" << argv[0] << std::endl;
@@ -788,6 +870,10 @@ int main(int argc, char** argv) {
         GSTATS_JSON(json);
         write_json_file(result_statistic_file_name, json);
     }
+
+    #ifdef PERF_REG
+    perf_control_close();
+    #endif
 
     printUptimeStampForPERF("MAIN_END");
 }

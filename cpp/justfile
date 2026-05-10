@@ -7,11 +7,17 @@ build target='payload_tree': conf
 [arg("stat-out", long, short='s')]
 [arg("load-out", long, short='l')]
 run load-in='example.json' target='payload_tree' stat-out='/dev/null' load-out='/dev/null': (build target)
-  @mkfifo ctl
-  -perf stat -j -o {{ stat-out }} --control fifo:ctl \
-    -e instructions,cache-references,cache-misses,L1-dcache-loads,L1-dcache-load-misses,l2_cache_req_stat.dc_hit_in_l2,l2_cache_req_stat.dc_access_in_l2  \
-    -- env LD_PRELOAD=./lib/libmimalloc.so build/{{ target }}.debra -json-file {{ load-in }} -result-file {{ load-out }}
-  @rm ctl
+  @mkfifo ctl ack
+  -bash -lc 'exec {ctl_fd}<>ctl; exec {ack_fd}<>ack; PERF_CTL_FD=$ctl_fd PERF_ACK_FD=$ack_fd perf stat -j -o "{{ stat-out }}" --control fd:${ctl_fd},${ack_fd} -D -1 -e instructions,cache-references,cache-misses,branches,branch-misses -- env LD_PRELOAD=./lib/libmimalloc.so PERF_CTL_FD=$ctl_fd PERF_ACK_FD=$ack_fd build/{{ target }}.debra -json-file "{{ load-in }}" -result-file "{{ load-out }}"; status=$?; exec {ack_fd}>&-; exec {ctl_fd}>&-; exit $status'
+  @rm ctl ack
+
+  #-e instructions,cache-references,cache-misses,L1-dcache-loads,L1-dcache-load-misses  \
+  # ,l2_cache_req_stat.dc_hit_in_l2,l2_cache_req_stat.dc_access_in_l2
+
+diffskew:
+  just run thesis/diffskew/count_2_over_2048_bias_0.json payload_tree -s stats-close.json -l res-close.json
+  just run thesis/diffskew/count_2_over_2048_bias_0_5.json payload_tree -s stats-far.json -l res-far.json
+
 
 py:
   nix run nixpkgs#python3

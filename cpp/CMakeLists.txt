@@ -73,7 +73,7 @@ else ()
 endif ()
 
 if (PERF_REG)
-  add_definitions("-DPERF_REF")
+  add_definitions("-DPERF_REG")
 endif ()
 
 if (SKIP_VALIDATION)
