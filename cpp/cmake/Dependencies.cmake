@@ -1,5 +1,12 @@
 include(FetchContent)
 
+message(STATUS "Fetching threadlike")
+FetchContent_Declare(threadlike
+    URL https://github.com/vmedv/threadlike/archive/refs/heads/master.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP NEW
+)
+FetchContent_MakeAvailable(threadlike)
+
 message(STATUS "Fetching nlohmann_json")
 FetchContent_Declare(nlohmann_json
     URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz

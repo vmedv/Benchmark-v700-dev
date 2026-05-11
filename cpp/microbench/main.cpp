@@ -78,6 +78,7 @@ __thread int tid = 0;
 
 #include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
 #include "tree_stats.h"
+#include "runtime/runtime.h"
 
 #ifdef USE_RCU
 #include "eer_prcu_impl.h"
@@ -121,6 +122,33 @@ rlu_thread_data_t* rlu_tdata = NULL;
 #define DEINIT_ALL    \
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
+
+#if defined(RT_FIBERS)
+#ifdef USE_RCU
+#error "RT_FIBERS does not support USE_RCU"
+#endif
+#ifdef USE_RLU
+#error "RT_FIBERS does not support USE_RLU"
+#endif
+#ifdef USE_PAPI
+#error "RT_FIBERS does not support USE_PAPI"
+#endif
+#define MB_RUNTIME_WORKER_BIND(tid)
+#define MB_RUNTIME_WORKER_INIT(tid)
+#define MB_RUNTIME_WORKER_START(tid)
+#define MB_RUNTIME_WORKER_DEINIT(tid)
+#else
+#define MB_RUNTIME_WORKER_BIND(tid) binding_bindThread(tid)
+#define MB_RUNTIME_WORKER_INIT(tid) \
+    __RLU_INIT_THREAD;              \
+    __RCU_INIT_THREAD;              \
+    papi_create_eventset(tid);
+#define MB_RUNTIME_WORKER_START(tid) papi_start_counters(tid)
+#define MB_RUNTIME_WORKER_DEINIT(tid) \
+    papi_stop_counters(tid);          \
+    __RCU_DEINIT_THREAD;              \
+    __RLU_DEINIT_THREAD;
+#endif
 
 /******************************************************************************
  * Define global variables to store the numerical IDs of all GSTATS global
@@ -308,20 +336,46 @@ Statistic get_statistic(int64_t elapsed_millis) {
     return Statistic(elapsed_millis / 1000.);
 }
 
-void execute(globals_t* g, Parameters const& parameters, bool perf = false) {
-    std::thread** threads = new std::thread*[MAX_THREADS_POW2];
-    std::vector<ThreadLoopPtr> thread_loops = parameters.get_workload(g, g->rngs);
+bool has_custom_pinning(Parameters const& parameters) {
+    for (int cpu : parameters.get_pin()) {
+        if (cpu != -1) {
+            return true;
+        }
+    }
+    return false;
+}
 
-    std::cout << "binding threads...\n";
-    binding_setCustom(parameters.get_pin());
-    bind_threads(parameters.get_num_threads());
+void run_thread_loop(void* arg) {
+    auto* thread_loop = static_cast<ThreadLoop*>(arg);
+    thread_loop->run();
+}
+
+void execute(globals_t* g, Parameters const& parameters, bool perf = false) {
+    std::vector<ThreadLoopPtr> thread_loops = parameters.get_workload(g, g->rngs);
+    auto runtime_env = runtime::create();
+    std::vector<runtime::Worker> workers;
+    workers.reserve(parameters.get_num_threads());
+
+    std::cout << "runtime=" << runtime::name() << std::endl;
+    if (!runtime::supports_worker_pinning() && has_custom_pinning(parameters)) {
+        std::cerr << "ERROR: runtime " << runtime::name()
+                  << " does not support per-worker pinning" << std::endl;
+        exit(-1);
+    }
+
+    if (runtime::supports_worker_pinning()) {
+        std::cout << "binding threads...\n";
+        binding_setCustom(parameters.get_pin());
+        bind_threads(parameters.get_num_threads());
+    }
 
     std::cout << "creating threads...\n";
     for (int i = 0; i < parameters.get_num_threads(); ++i) {
-        threads[i] = new std::thread(&ThreadLoop::run, thread_loops[i].get());
+        workers.push_back(runtime::spawn(runtime_env, run_thread_loop, thread_loops[i].get()));
     }
 
     while (g->running < parameters.get_num_threads()) {
+        runtime::yield();
         TRACE COUTATOMIC("main thread: waiting for threads to START running=" << g->running
                                                                               << std::endl);
     }  // wait for all threads to be ready
@@ -347,8 +401,8 @@ void execute(globals_t* g, Parameters const& parameters, bool perf = false) {
     g->start = true;
     SOFTWARE_BARRIER;
 
-    for (size_t i = 0; i < parameters.get_num_threads(); ++i) {
-        threads[i]->join();
+    for (auto& worker : workers) {
+        worker.join();
     }
 
     #ifdef PERF_REG
@@ -415,8 +469,9 @@ void execute(globals_t* g, Parameters const& parameters, bool perf = false) {
         std::chrono::duration_cast<std::chrono::milliseconds>(g->endTime - g->startTime).count();
 
     parameters.stopCondition->clean();
-    delete[] threads;
-    binding_deinit();
+    if (runtime::supports_worker_pinning()) {
+        binding_deinit();
+    }
 
     g->start = false;
     g->done = false;

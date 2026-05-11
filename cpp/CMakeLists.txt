@@ -22,6 +22,8 @@ option(KEY_TOTAL_STAT  "trace depth & search total stats"    ON)
 
 set(MAX_THREADS "512" CACHE STRING "declare max threads (should be power of 2)")
 set(CPU_FREQ "2.1" CACHE STRING "declare freq for server clock")
+set(RT "STD" CACHE STRING "runtime backend: STD or FIBERS")
+set_property(CACHE RT PROPERTY STRINGS STD FIBERS)
 
 ##### compiler configuration #####
 
@@ -110,6 +112,20 @@ set(libs "")
 
 find_package(nlohmann_json CONFIG REQUIRED)
 list(APPEND libs nlohmann_json::nlohmann_json)
+include_directories(${threadlike_SOURCE_DIR}/include)
+
+if(RT STREQUAL "STD")
+    list(APPEND compilerDefinitions RT_STD)
+elseif(RT STREQUAL "FIBERS")
+    list(APPEND compilerDefinitions RT_FIBERS)
+    if(PAPI)
+        message(FATAL_ERROR "RT=FIBERS requires -DPAPI=OFF")
+    endif()
+    find_package(Boost REQUIRED COMPONENTS fiber context)
+    list(APPEND libs Boost::fiber Boost::context)
+else()
+    message(FATAL_ERROR "Unsupported RT=${RT}. Supported values: STD, FIBERS")
+endif()
 
 if(OPTIMIZE)
     add_compile_definitions(DCMAKE_BUILD_TYPE=Release)

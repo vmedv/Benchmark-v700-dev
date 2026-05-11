@@ -7,33 +7,34 @@
 #include "args_generators/args_generator.h"
 #include "globals_t.h"
 #include "globals_t_impl.h"
+#include "runtime/runtime.h"
 
 namespace microbench::workload {
 
 #define THREAD_MEASURED_PRE                                                        \
     tid = this->threadId;                                                          \
-    binding_bindThread(tid);                                                       \
+    MB_RUNTIME_WORKER_BIND(tid);                                                   \
     garbage = 0;                                                                   \
     rqResultKeys = std::vector<KeyType>();                                         \
     /*rqResultKeys.resize(this->RQ_RANGE + MAX_KEYS_PER_NODE);*/                       \
     rqResultValues = std::vector<VALUE_TYPE>();                                    \
     /*rqResultValues.resize(this->RQ_RANGE + MAX_KEYS_PER_NODE);*/                     \
     NO_VALUE = this->g->dsAdapter->getNoValue();                                   \
-    __RLU_INIT_THREAD;                                                             \
-    __RCU_INIT_THREAD;                                                             \
     this->g->dsAdapter->initThread(threadId);                                      \
-    papi_create_eventset(tid);                                                     \
+    MB_RUNTIME_WORKER_INIT(tid);                                                   \
     __sync_fetch_and_add(&this->g->running, 1);                                    \
     __sync_synchronize();                                                          \
     while (!this->g->start) {                                                      \
         SOFTWARE_BARRIER;                                                          \
+        microbench::runtime::yield();                                              \
+        tid = this->threadId;                                                      \
         TRACE COUTATOMICTID("waiting to start" << std::endl);                      \
     }                                                                              \
     GSTATS_SET(tid, time_thread_start,                                             \
                std::chrono::duration_cast<std::chrono::microseconds>(              \
-                   std::chrono::high_resolution_clock::now() - this->g->startTime) \
-                   .count());                                                      \
-    papi_start_counters(tid);                                                      \
+                    std::chrono::high_resolution_clock::now() - this->g->startTime) \
+                    .count());                                                      \
+    MB_RUNTIME_WORKER_START(tid);                                                  \
     int cnt = 0;                                                                   \
     rq_cnt = 0;                                                                    \
     DURATION_START(tid);
@@ -43,17 +44,17 @@ namespace microbench::workload {
     DURATION_END(tid, duration_all_ops);                                           \
     GSTATS_SET(tid, time_thread_terminate,                                         \
                std::chrono::duration_cast<std::chrono::microseconds>(              \
-                   std::chrono::high_resolution_clock::now() - this->g->startTime) \
-                   .count());                                                      \
+                    std::chrono::high_resolution_clock::now() - this->g->startTime) \
+                    .count());                                                      \
     SOFTWARE_BARRIER;                                                              \
-    papi_stop_counters(tid);                                                       \
+    MB_RUNTIME_WORKER_DEINIT(tid);                                                 \
     SOFTWARE_BARRIER;                                                              \
     while (this->g->running) {                                                     \
         SOFTWARE_BARRIER;                                                          \
+        microbench::runtime::yield();                                              \
+        tid = this->threadId;                                                      \
     }                                                                              \
-    this->g->dsAdapter->deinitThread(tid);                                         \
-    __RCU_DEINIT_THREAD;                                                           \
-    __RLU_DEINIT_THREAD;                                                           \
+    this->g->dsAdapter->deinitThread(this->threadId);                              \
     this->g->garbage += garbage;
 
 KeyType* ThreadLoop::execute_insert(KeyType& key) {
@@ -148,6 +149,9 @@ void ThreadLoop::run() {
         ++cnt;
         VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
         step();
+        if (microbench::runtime::yield_if_needed(cnt)) {
+            tid = this->threadId;
+        }
     }
     THREAD_MEASURED_POST
 }
