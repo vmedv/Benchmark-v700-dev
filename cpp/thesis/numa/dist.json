@@ -1,0 +1,91 @@
+{
+  "prefill": {
+    "numThreads": 1,
+    "stopCondition": {
+      "ClassName": "OperationCounter",
+      "commonOperationLimit": 536870912
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 1,
+        "threadLoopBuilder": {
+          "ClassName": "PrefillInsertThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 0
+            },
+            "distributionBuilder": {
+              "ClassName": "BalancedPrefillDistributionBuilder"
+            }
+          },
+          "numberOfAttempts": 536870912
+        }
+      }
+    ]
+  },
+  "range": 536870912,
+  "test": {
+    "numThreads": 8,
+    "stopCondition": {
+      "ClassName": "Timer",
+      "workTime": 6000
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 8,
+        "pin": "[8-11], [16-19]",
+        "threadLoopBuilder": {
+          "ClassName": "DefaultThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "distributionBuilder": {
+              "ClassName": "UniformDistributionBuilder"
+            },
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 0
+            }
+          },
+          "parameters": {
+            "insertRatio": 0,
+            "removeRatio": 0,
+            "rqRatio": 0.0
+          }
+        }
+      }
+    ]
+  },
+  "warmUp": {
+    "numThreads": 8,
+    "stopCondition": {
+      "ClassName": "Timer",
+      "workTime": 2000
+    },
+    "threadLoopBuilders": [
+      {
+        "quantity": 8,
+        "pin": "[8-11], [16-19]",
+        "threadLoopBuilder": {
+          "ClassName": "DefaultThreadLoopBuilder",
+          "argsGeneratorBuilder": {
+            "ClassName": "DefaultArgsGeneratorBuilder",
+            "distributionBuilder": {
+              "ClassName": "UniformDistributionBuilder"
+            },
+            "dataMapBuilder": {
+              "ClassName": "IdDataMapBuilder",
+              "id": 0
+            }
+          },
+          "parameters": {
+            "insertRatio": 0,
+            "removeRatio": 0,
+            "rqRatio": 0.0
+          }
+        }
+      }
+    ]
+  }
+}
